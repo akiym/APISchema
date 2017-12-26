@@ -16,6 +16,7 @@ sub new {
     bless {
         resources => {},
         routes => [],
+        references => {},
     }, $class;
 }
 
@@ -90,6 +91,27 @@ sub get_route_by_name {
     my ($self, $name) = @_;
     my ($route) = grep { ($_->title||'') eq $name } @{$self->get_routes};
     return $route;
+}
+
+sub register_references {
+    my ($self, $resource, $reference) = @_;
+    push @{$self->{references}->{$resource->title}}, $reference;
+}
+
+sub get_references {
+    my ($self, $resolver) = @_;
+
+    for my $resource (@{$self->get_resources}) {
+        my $properties = $resolver->properties($resource->definition);
+        for my $key (sort keys %$properties) {
+            my $prop = $properties->{$key};
+            if (exists $prop->{'$ref'}) {
+                my $ref = $prop->{'$ref'} =~ s!^#/resource/!!r;
+                push @{$self->{references}->{$ref}}, $resource;
+            }
+        }
+    }
+    return $self->{references};
 }
 
 1;

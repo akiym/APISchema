@@ -44,6 +44,7 @@ sub format_schema {
     my $resolver = APISchema::Generator::Markdown::ResourceResolver->new(
         schema => $root,
     );
+    my $references = $schema->get_references($resolver);
     return $self->{index}->(
         $renderer,
         $schema,
@@ -103,7 +104,7 @@ sub format_schema {
             $self->{resource}->($renderer, $resolver, $_, [ map { +{
                 path => $_,
                 definition => $properties->{$_},
-            } } sort keys %$properties ]);
+            } } sort keys %$properties ], $references);
         } grep {
             ( $_->definition->{type} // '' ) ne 'hidden';
         } @$resources),
@@ -209,7 +210,7 @@ HTTP/1.1 <?= http_status($code) ?>
 ? } # scalar keys %$res
 
 @@ resource
-? my ($r, $resource, $properties) = @_;
+? my ($r, $resource, $properties, $references) = @_;
 ### <a name="<?= anchor(resource => $resource) ?>"></a> `<?= $resource->title ?>` : <?= type($resource->definition) ?>
 ```javascript
 <?= pretty_json $r->example($resource->definition) ?>
@@ -227,3 +228,17 @@ HTTP/1.1 <?= http_status($code) ?>
 |`<?= $prop->{path} ?>` |<?= type($def) ?> |<?= code($def->{default}) ?> |<?= code($def->{example}) ?> |<?= restriction($def) ?> |<?= desc($def->{description}) ?> |
 ?   } # $prop
 ? } # scalar @$properties
+
+? if (exists $references->{$resource->title}) {
+
+#### References
+
+?   for my $ref (@{$references->{$resource->title}}) {
+?     if ($ref->isa('APISchema::Route')) {
+- [<?= $_->title ?>](#<?= anchor(route => $_->title) ?>) - <?= methods($_->method) ?> <?= $_->route ?>
+?     } elsif ($ref->isa('APISchema::Resource')) {
+- [<?= $ref->title ?>](#<?= anchor(resource => $ref->title) ?>)
+?     }
+?   } # $ref
+
+? } # exists $references->{$resource->title}
