@@ -235,7 +235,7 @@ HTTP/1.1 <?= http_status($code) ?>
 
 ?   for my $ref (@{$references->{$resource->title}}) {
 ?     if ($ref->isa('APISchema::Route')) {
-- [<?= $_->title ?>](#<?= anchor(route => $_->title) ?>) - <?= methods($_->method) ?> <?= $_->route ?>
+- [<?= $ref->title ?>](#<?= anchor(route => $ref->title) ?>) - <?= methods($ref->method) ?> <?= $ref->route ?>
 ?     } elsif ($ref->isa('APISchema::Resource')) {
 - [<?= $ref->title ?>](#<?= anchor(resource => $ref->title) ?>)
 ?     }

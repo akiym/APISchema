@@ -2,6 +2,7 @@ package APISchema::Schema;
 use strict;
 use warnings;
 use 5.014;
+use Scalar::Util qw(blessed);
 
 use APISchema::Route;
 use APISchema::Resource;
@@ -100,6 +101,27 @@ sub register_references {
 
 sub get_references {
     my ($self, $resolver) = @_;
+
+    my $root = $self->get_resource_root;
+    for my $route (@{$self->get_routes}) {
+        my $default_code = $route->default_responsible_code;
+        my $resources = [grep {
+            blessed($_) && $_->isa('APISchema::Resource')
+        } (
+            values %{$route->canonical_request_resource($root)},
+            values %{$route->canonical_response_resource($root, [$default_code])},
+        )];
+        for my $resource (@$resources) {
+            my $properties = $resolver->properties($resource->definition);
+            for my $key (sort keys %$properties) {
+                my $prop = $properties->{$key};
+                if (exists $prop->{'$ref'}) {
+                    my $ref = $prop->{'$ref'} =~ s!^#/resource/!!r;
+                    push @{$self->{references}->{$ref}}, $route;
+                }
+            }
+        }
+    }
 
     for my $resource (@{$self->get_resources}) {
         my $properties = $resolver->properties($resource->definition);
