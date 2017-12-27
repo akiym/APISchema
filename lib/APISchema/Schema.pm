@@ -133,6 +133,14 @@ sub get_references {
             }
         }
     }
+
+    for my $references (values %{$self->{references}}) {
+        my %seen;
+        $references = [
+            grep { !$seen{$_->title}++ } @$references
+        ];
+    }
+
     return $self->{references};
 }
 
